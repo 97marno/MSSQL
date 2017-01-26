@@ -1,0 +1,33 @@
+/*#########################
+	DECOM OF DATABASES
+###########################
+==============================================================================================================================================================
+*/
+
+DECLARE @fileDate VARCHAR(20) -- used for file name
+DECLARE @name VARCHAR(50) -- database name 
+DECLARE @rw VARCHAR(256) -- used to set DB offline
+DECLARE @delete VARCHAR(256) -- used to set DB offline
+
+-- specify filename format
+SELECT @fileDate = CONVERT(VARCHAR(20),GETDATE(),112) 
+DECLARE db_cursor CURSOR FOR  
+SELECT name 
+FROM master.dbo.sysdatabases 
+WHERE name IN ('Tholbox6', 'Tholbox6_N2')  -- EDIT HERE!! *** SPECIFY DATABASES ***
+
+-- ================== DO NOT EDIT AFTER THIS LINE ===============================
+OPEN db_cursor   
+FETCH NEXT FROM db_cursor INTO @name   
+
+WHILE @@FETCH_STATUS = 0   
+BEGIN   
+			SET @rw = N'ALTER DATABASE [' + @name + N'] SET ONLINE'
+				EXEC(@rw)
+			SET @delete = N' DROP DATABASE[' +@name + N']'
+				--EXEC(@delete)
+		FETCH NEXT FROM db_cursor INTO @name   
+END   
+
+CLOSE db_cursor   
+DEALLOCATE db_cursor

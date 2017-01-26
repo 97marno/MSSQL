@@ -1,0 +1,103 @@
+ --************************************************************************************
+	TEST ENVIRONMENT
+--************************************************************************************
+NOTES
+=============================================================== 
+Control if database has: 
+Linked servers: 
+Reporting Services:
+Analysis Services:
+Jobs:
+
+--************************************************************************************
+--* (01)Check for users in db * (0102)get-logins-orphan.sql
+--************************************************************************************
+
+
+
+
+
+
+
+--************************************************************************************
+--* (02) Check orphan accounts * (0102)get-logins-orphan.sql
+--************************************************************************************
+
+
+
+
+
+
+--************************************************************************************
+--* (03) Get user accounts; sp_help_revlogin 
+--************************************************************************************
+
+
+
+
+
+
+
+--************************************************************************************
+--* (04) Check active users for specified database
+--************************************************************************************
+DECLARE @name VARCHAR(50) -- database name 
+
+-- specify filename format
+DECLARE db_cursor CURSOR FOR  
+SELECT name 
+FROM master.dbo.sysdatabases 
+WHERE name IN ('%DATABASE%')  -- EDIT HERE!! *** SPECIFY DATABASES ***
+
+-- ================== DO NOT EDIT AFTER THIS LINE ===============================
+OPEN db_cursor   
+FETCH NEXT FROM db_cursor INTO @name   
+
+WHILE @@FETCH_STATUS = 0   BEGIN   
+	SELECT spid, nt_domain, nt_username, loginame, login_time, last_batch, DB_NAME(dbid) AS 'Database', status, hostname, program_name, cmd FROM master.dbo.sysprocesses 
+	WHERE dbid IN (DB_ID(@name))
+	ORDER BY dbid, status ASC, last_batch DESC
+	FETCH NEXT FROM db_cursor INTO @name   
+END   
+
+CLOSE db_cursor   
+DEALLOCATE db_cursor
+
+
+--************************************************************************************
+--* (04) Backup source database(s)
+--************************************************************************************
+Backup_databases.sql
+
+--==============================================================================================================================================================
+-- ***************************** AFTER MIGRATION *************************************
+--==============================================================================================================================================================
+ 
+\\SEHAN5643CLV001\macull$
+(05) Restore file list and database(s) - Restore_multiple_databases_2005-2008.sql
+(06) Create user accounts from (03)
+
+
+--************************************************************************************
+--* (09) Change some stuff in the DB and do a backup
+--************************************************************************************
+--otherstuff.sql
+
+--File growth and logical name
+ALTER DATABASE [%DATABASE%] MODIFY FILE (NAME = N'%DATABASE%', FILEGROWTH = 512000KB, MAXSIZE = UNLIMITED)
+GO
+ALTER DATABASE [%DATABASE%] MODIFY FILE (NAME = N'%DATABASE%_log', FILEGROWTH = 256000KB, MAXSIZE = UNLIMITED)
+GO
+--Update statistics
+USE [%DATABASE%] 
+GO
+EXEC sp_updatestats	
+
+--************************************************************************************
+--* (10) Backup
+--************************************************************************************		
+
+-- Take ordinary full backup using Maintenance Solution	
+use master
+go
+EXECUTE [dbo].[DatabaseBackup] @Databases = '%DATABASE%', @Directory = N'\\MSSQLBCK5073\root', @BackupType = 'FULL', @Verify = 'Y', @CleanupTime = 337, @CheckSum = 'Y', @LogToTable = 'Y'
