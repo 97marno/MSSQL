@@ -1,4 +1,7 @@
+
+/*
 --select * from ProgramUser where Firstname ='Per'
+*/
 
 select TimeCodeId, TimeCodeName from TimeCode
 
